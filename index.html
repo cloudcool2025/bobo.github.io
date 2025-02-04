@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聂迪的每日点餐</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .menu {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .dish {
+            text-align: center;
+        }
+        .dish img {
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            border: 3px solid #333;
+        }
+        .dish p {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        .date-input {
+            margin-top: 20px;
+        }
+        .date-input label {
+            font-size: 18px;
+        }
+        .date-input input {
+            padding: 5px;
+            font-size: 16px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 30px;
+        }
+        .result button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .result button:hover {
+            background-color: #555;
+        }
+        .output {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>聂迪的每日点餐</h1>
+
+<div class="menu">
+    <div class="dish">
+        <img src="dish1.jpg" alt="KFC">
+        <p>葱烧海参</p>
+    </div>
+    <div class="dish">
+        <img src="dish2.jpg" alt="绿草地">
+        <p>辣椒炒肉</p>
+    </div>
+    <div class="dish">
+        <img src="dish3.jpg" alt="饿着吧">
+        <p>豆豉蒸肉</p>
+    </div>
+    <div class="dish">
+        <img src="dish4.jpg" alt="食堂">
+        <p>蛋蒸肉</p>
+    </div>
+</div>
+
+<div class="date-input">
+    <label for="date">选择日期：</label>
+    <input type="date" id="date">
+</div>
+
+<div class="result">
+    <button onclick="chooseDish()">今日吃什么？</button>
+    <div class="output" id="output"></div>
+</div>
+
+<script>
+    const dishes = [
+        { name: "KFC", image: "dish1.jpg" },
+        { name: "绿草地", image: "dish2.jpg" },
+        { name: "饿着吧", image: "dish3.jpg" },
+        { name: "食堂", image: "dish4.jpg" }
+    ];
+
+    function chooseDish() {
+        const dateInput = document.getElementById("date").value;
+        if (!dateInput) {
+            alert("请选择日期！");
+            return;
+        }
+
+        // 根据日期生成随机种子，确保每天的选择是固定的
+        const date = new Date(dateInput);
+        const seed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+        const randomIndex = Math.floor(Math.sin(seed) * 10000) % dishes.length;
+
+        const selectedDish = dishes[randomIndex];
+
+        // 显示结果
+        const outputElement = document.getElementById("output");
+        outputElement.innerHTML = `
+            <p>${dateInput} 的推荐菜品：</p>
+            <p><strong>${selectedDish.name}</strong></p>
+            <img src="${selectedDish.image}" alt="${selectedDish.name}" style="width: 150px; height: 150px; border-radius: 10px;">
+        `;
+    }
+</script>
+
+</body>
+</html>
