@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import type { MatchWithProfiles, UserProfile } from '@/types/database';
 import { Trophy, ArrowLeft, Loader2, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import StatsChart from '@/components/StatsChart';
 
 export default function History() {
   const navigate = useNavigate();
@@ -66,6 +67,21 @@ export default function History() {
     }
 
     setLoading(false);
+  };
+
+  const getMatchHistory = () => {
+    if (!profile || !matches.length) return [];
+    const userId = selectedUser === 'all' ? profile.id : selectedUser;
+    return matches.map(m => {
+      const isInitiator = m.initiator_id === userId;
+      const date = m.finished_at ? new Date(m.finished_at).toLocaleDateString('zh-CN') : '';
+      return {
+        date,
+        initiatorScore: isInitiator ? m.initiator_score : m.opponent_score,
+        opponentScore: isInitiator ? m.opponent_score : m.initiator_score,
+        winner: m.winner?.username || '平局',
+      };
+    });
   };
 
   if (loading) {
@@ -133,6 +149,12 @@ export default function History() {
               <div className="text-2xl font-bold text-amber-100">{stats.fouls} / {stats.lucky}</div>
               <div className="text-amber-300 text-sm">犯规 / 运气</div>
             </div>
+          </div>
+        )}
+
+        {stats && (
+          <div className="mb-8">
+            <StatsChart stats={stats} matchHistory={getMatchHistory()} />
           </div>
         )}
 
