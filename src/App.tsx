@@ -1,32 +1,72 @@
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/useAuthStore';
+import Home from '@/pages/Home';
+import Login from '@/pages/Login';
+import MatchDetail from '@/pages/MatchDetail';
+import History from '@/pages/History';
+import Profile from '@/pages/Profile';
+
+function PrivateRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading, initialized, initialize } = useAuthStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  if (!initialized || loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-900 via-amber-800 to-amber-900 flex items-center justify-center">
+        <div className="text-amber-400 text-xl">加载中...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #78350f 0%, #92400e 50%, #78350f 100%)',
-      padding: '16px'
-    }}>
-      <div style={{ 
-        backgroundColor: 'rgba(22, 101, 52, 0.9)', 
-        borderRadius: '16px', 
-        padding: '32px', 
-        textAlign: 'center',
-        maxWidth: '400px',
-        width: '100%'
-      }}>
-        <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎱</div>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: '#fbbf24', marginBottom: '16px' }}>
-          台球计分小程序
-        </h1>
-        <div style={{ color: '#fef3c7', marginBottom: '24px' }}>
-          <p>部署成功！</p>
-          <p style={{ marginTop: '16px', fontSize: '14px', color: '#fde68a' }}>
-            如果你能看到这个页面，说明应用工作正常！
-          </p>
-        </div>
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/match/:id"
+          element={
+            <PrivateRoute>
+              <MatchDetail />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <PrivateRoute>
+              <History />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
