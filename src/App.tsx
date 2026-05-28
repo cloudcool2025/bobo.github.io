@@ -31,7 +31,7 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Router>
+    <Router basename="/bobo.github.io">
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
