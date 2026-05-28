@@ -1,6 +1,5 @@
 -- ============================================
--- 台球计分小程序 - 安全数据库迁移脚本
--- 此脚本只创建缺失的表和配置，避免重复操作错误
+-- 台球计分小程序 - 数据库迁移脚本（仅核心部分）
 -- ============================================
 
 -- 检查并创建matches表（如果不存在）
@@ -21,7 +20,7 @@ CREATE TABLE IF NOT EXISTS matches (
     CONSTRAINT different_players CHECK (initiator_id != opponent_id)
 );
 
--- 为matches表创建索引（如果不存在）
+-- 为matches表创建索引
 CREATE INDEX IF NOT EXISTS idx_matches_initiator ON matches(initiator_id);
 CREATE INDEX IF NOT EXISTS idx_matches_opponent ON matches(opponent_id);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
@@ -29,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 -- 为matches表启用RLS
 ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 
--- 为matches表创建RLS策略（先删除已存在的）
+-- 为matches表创建RLS策略
 DROP POLICY IF EXISTS "Users can view all matches" ON matches;
 CREATE POLICY "Users can view all matches" ON matches
     FOR SELECT USING (true);
@@ -61,6 +60,3 @@ CREATE POLICY "Admins can delete matches" ON matches
 -- 为matches表授权
 GRANT ALL PRIVILEGES ON TABLE matches TO authenticated;
 GRANT SELECT ON TABLE matches TO anon;
-
--- 验证当前表状态
-SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
