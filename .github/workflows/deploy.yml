@@ -9,8 +9,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout source
         uses: actions/checkout@v4
+        with:
+          ref: source
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -24,9 +26,23 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Checkout main
+        uses: actions/checkout@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: main
+          ref: main
+          path: main-branch
+
+      - name: Copy files
+        run: |
+          rm -rf main-branch/*
+          cp -r dist/* main-branch/
+          ls -la main-branch/
+
+      - name: Commit and push
+        working-directory: main-branch
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Deploy build"
+          git push origin main
