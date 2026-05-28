@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { UserProfile, MatchWithProfiles } from '@/types/database';
-import { Plus, Users, Clock, Loader2 } from 'lucide-react';
+import type { Match, UserProfile } from '@/types/database';
+import { Plus, Users, Clock, Loader2, User } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useNavigate } from 'react-router-dom';
+
+interface MatchWithProfiles extends Match {
+  initiator?: UserProfile;
+  opponent?: UserProfile;
+  winner?: UserProfile | null;
+}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -31,18 +37,37 @@ export default function Home() {
 
     const { data: matchesData } = await supabase
       .from('matches')
-      .select(`
-        *,
-        initiator:user_profiles!matches_initiator_id_fkey(*),
-        opponent:user_profiles!matches_opponent_id_fkey(*),
-        winner:user_profiles!matches_winner_id_fkey(*)
-      `)
+      .select('*')
       .or(`initiator_id.eq.${profile.id},opponent_id.eq.${profile.id}`)
       .in('status', ['pending', 'playing'])
       .order('created_at', { ascending: false });
 
+    const rawMatches = matchesData || [];
+    const matchesWithProfiles: MatchWithProfiles[] = [];
+
+    for (const match of rawMatches) {
+      const { data: initiatorData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', match.initiator_id)
+        .single();
+      
+      const { data: opponentData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', match.opponent_id)
+        .single();
+
+      matchesWithProfiles.push({
+        ...match,
+        initiator: initiatorData || undefined,
+        opponent: opponentData || undefined,
+        winner: null,
+      });
+    }
+
     setUsers(usersData || []);
-    setMatches((matchesData as MatchWithProfiles[]) || []);
+    setMatches(matchesWithProfiles);
     setLoading(false);
   };
 
@@ -155,11 +180,20 @@ export default function Home() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold text-amber-400">欢迎, {profile?.username}</h2>
-            <p className="text-amber-200">
-              {profile?.role === 'admin' ? '管理员' : '普通用户'}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-green-700 flex items-center justify-center overflow-hidden">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+              ) : (
+                <User size={32} className="text-amber-400" />
+              )}
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-amber-400">欢迎, {profile?.username}</h2>
+              <p className="text-amber-200">
+                {profile?.role === 'admin' ? '管理员' : '普通用户'}
+              </p>
+            </div>
           </div>
           <button
             onClick={() => setShowNewMatch(true)}
@@ -189,14 +223,14 @@ export default function Home() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-green-700 flex items-center justify-center overflow-hidden">
-                        {opponent.avatar_url ? (
+                        {opponent?.avatar_url ? (
                           <img src={opponent.avatar_url} alt={opponent.username} className="w-full h-full object-cover" />
                         ) : (
                           <Users size={32} className="text-green-500" />
                         )}
                       </div>
                       <div>
-                        <p className="text-xl font-bold text-amber-100">vs {opponent.username}</p>
+                        <p className="text-xl font-bold text-amber-100">vs {opponent?.username || '加载中...'}</p>
                         <p className="text-amber-300">
                           {match.initiator_score} : {match.opponent_score}
                         </p>

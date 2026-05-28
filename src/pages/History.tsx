@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { Match, UserProfile } from '@/types/database';
-import { Trophy, ArrowLeft, Loader2, BarChart3 } from 'lucide-react';
+import { Trophy, ArrowLeft, Loader2, BarChart3, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StatsChart from '@/components/StatsChart';
 
@@ -172,6 +172,7 @@ export default function History() {
               <div className="text-amber-300 text-sm">胜场</div>
             </div>
             <div className="bg-green-800/90 backdrop-blur rounded-xl p-4 text-center">
+              <XCircle size={24} className="mx-auto mb-2 text-red-400" />
               <div className="text-3xl font-bold text-red-400">{stats.losses}</div>
               <div className="text-amber-300 text-sm">败场</div>
             </div>
@@ -188,7 +189,7 @@ export default function History() {
           </div>
         )}
 
-        {stats && (
+        {stats && matches.length > 0 && (
           <div className="mb-8">
             <StatsChart stats={stats} matchHistory={getMatchHistory()} />
           </div>
