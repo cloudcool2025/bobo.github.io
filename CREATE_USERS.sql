@@ -1,6 +1,6 @@
 -- 创建4个台球计分小程序用户
 -- 用户名: zhaobo, sunzhigang, chenzhuang, niedi
--- 密码: 123
+-- 密码: 123456 (6个字符，符合要求)
 
 -- 创建用户函数
 CREATE OR REPLACE FUNCTION create_billiards_user(p_username TEXT, p_email TEXT, p_password TEXT)
@@ -27,10 +27,10 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 创建4个用户
-SELECT create_billiards_user('zhaobo', 'zhaobo@example.com', '123');
-SELECT create_billiards_user('sunzhigang', 'sunzhigang@example.com', '123');
-SELECT create_billiards_user('chenzhuang', 'chenzhuang@example.com', '123');
-SELECT create_billiards_user('niedi', 'niedi@example.com', '123');
+SELECT create_billiards_user('zhaobo', 'zhaobo@example.com', '123456');
+SELECT create_billiards_user('sunzhigang', 'sunzhigang@example.com', '123456');
+SELECT create_billiards_user('chenzhuang', 'chenzhuang@example.com', '123456');
+SELECT create_billiards_user('niedi', 'niedi@example.com', '123456');
 
 -- 查看创建的用户
 SELECT id, username, email FROM auth.users 
