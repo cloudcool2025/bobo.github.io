@@ -28,9 +28,9 @@ export default function MatchDetail() {
       .from('matches')
       .select(`
         *,
-        initiator:user_profiles!matches_initiator_id_fkey(*),
-        opponent:user_profiles!matches_opponent_id_fkey(*),
-        winner:user_profiles!matches_winner_id_fkey(*)
+        initiator:user_profiles(*),
+        opponent:user_profiles(*),
+        winner:user_profiles(*)
       `)
       .eq('id', id)
       .single();
