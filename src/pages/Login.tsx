@@ -3,8 +3,10 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
 import { User, Upload, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useNavigate } from 'react-router-dom';
 
 export default function Login() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,7 +16,12 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { signIn, signUp } = useAuthStore();
+  const { signIn, signUp, user } = useAuthStore();
+
+  if (user) {
+    navigate('/');
+    return null;
+  }
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,7 +52,11 @@ export default function Login() {
     try {
       if (isLogin) {
         const { error: err } = await signIn(email, password);
-        if (err) setError(err.message);
+        if (err) {
+          setError(err.message);
+        } else {
+          navigate('/');
+        }
       } else {
         const { error: err } = await signUp(email, password, username);
         if (err) {
@@ -57,6 +68,9 @@ export default function Login() {
             const fileName = `${user.id}/avatar.${fileExt}`;
             await supabase.storage.from('avatars').upload(fileName, avatarFile, { upsert: true });
           }
+          navigate('/');
+        } else {
+          navigate('/');
         }
       }
     } catch {
