@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { MatchWithProfiles } from '@/types/database';
+import type { Match, UserProfile } from '@/types/database';
 import { Plus, Minus, Trophy, AlertCircle, Sparkles, ArrowLeft, Loader2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useNavigate, useParams } from 'react-router-dom';
+
+interface MatchWithProfiles extends Match {
+  initiator?: UserProfile;
+  opponent?: UserProfile;
+  winner?: UserProfile | null;
+}
 
 export default function MatchDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuthStore();
   const [match, setMatch] = useState<MatchWithProfiles | null>(null);
+  const [initiatorProfile, setInitiatorProfile] = useState<UserProfile | null>(null);
+  const [opponentProfile, setOpponentProfile] = useState<UserProfile | null>(null);
+  const [winnerProfile, setWinnerProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
@@ -24,23 +33,50 @@ export default function MatchDetail() {
 
     console.log('尝试加载对局:', id);
 
-    const { data, error } = await supabase
+    const { data: matchData, error: matchError } = await supabase
       .from('matches')
-      .select(`
-        *,
-        initiator:user_profiles(*),
-        opponent:user_profiles(*),
-        winner:user_profiles(*)
-      `)
+      .select('*')
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error('加载对局失败:', error);
+    if (matchError) {
+      console.error('加载对局失败:', matchError);
+      setLoading(false);
+      return;
     }
 
-    console.log('加载对局数据:', data);
-    setMatch(data as MatchWithProfiles);
+    console.log('对局数据:', matchData);
+    setMatch(matchData as MatchWithProfiles);
+
+    if (matchData) {
+      const { data: initiatorData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', matchData.initiator_id)
+        .single();
+      
+      const { data: opponentData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', matchData.opponent_id)
+        .single();
+      
+      const { data: winnerData } = matchData.winner_id 
+        ? await supabase.from('user_profiles').select('*').eq('id', matchData.winner_id).single()
+        : { data: null };
+
+      setInitiatorProfile(initiatorData);
+      setOpponentProfile(opponentData);
+      setWinnerProfile(winnerData);
+
+      setMatch({
+        ...matchData,
+        initiator: initiatorData || undefined,
+        opponent: opponentData || undefined,
+        winner: winnerData || null,
+      } as MatchWithProfiles);
+    }
+
     setLoading(false);
   };
 
@@ -103,6 +139,9 @@ export default function MatchDetail() {
     );
   }
 
+  const initiator = initiatorProfile;
+  const opponent = opponentProfile;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-900 via-amber-800 to-amber-900">
       <div className="bg-green-900/90 backdrop-blur-sm shadow-lg sticky top-0 z-10">
@@ -137,17 +176,18 @@ export default function MatchDetail() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          {[{ p: match.initiator, score: match.initiator_score, fouls: match.initiator_fouls, lucky: match.initiator_lucky, isInit: true },
-            { p: match.opponent, score: match.opponent_score, fouls: match.opponent_fouls, lucky: match.opponent_lucky, isInit: false }
+          {[
+            { p: initiator, score: match.initiator_score, fouls: match.initiator_fouls, lucky: match.initiator_lucky, isInit: true },
+            { p: opponent, score: match.opponent_score, fouls: match.opponent_fouls, lucky: match.opponent_lucky, isInit: false }
           ].map((player) => (
             <div
-              key={player.p.id}
+              key={player.isInit ? 'initiator' : 'opponent'}
               className={clsx(
                 'bg-green-800/90 backdrop-blur rounded-2xl p-6 shadow-xl',
-                match.winner_id === player.p.id && 'ring-4 ring-amber-400'
+                match.winner_id === player.p?.id && 'ring-4 ring-amber-400'
               )}
             >
-              {match.winner_id === player.p.id && (
+              {match.winner_id === player.p?.id && (
                 <div className="text-center mb-4">
                   <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-amber-900 rounded-full font-bold">
                     <Trophy size={20} />
@@ -158,13 +198,13 @@ export default function MatchDetail() {
 
               <div className="flex items-center justify-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-green-700 flex items-center justify-center overflow-hidden">
-                  {player.p.avatar_url ? (
+                  {player.p?.avatar_url ? (
                     <img src={player.p.avatar_url} alt={player.p.username} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl text-amber-400">{player.p.username[0]}</span>
+                    <span className="text-2xl text-amber-400">{player.p?.username?.[0] || '?'}</span>
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-amber-100">{player.p.username}</h3>
+                <h3 className="text-2xl font-bold text-amber-100">{player.p?.username || '加载中...'}</h3>
               </div>
 
               <div className="text-center mb-6">
