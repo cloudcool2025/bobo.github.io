@@ -24,19 +24,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (get().initialized) return;
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      // 添加超时保护
+      const timeoutPromise = new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 5000);
+      });
+      
+      const sessionPromise = supabase.auth.getSession();
+      
+      await Promise.race([sessionPromise, timeoutPromise]);
+      
+      const { data: { session } } = await sessionPromise;
       
       if (session?.user) {
         let profile = null;
         try {
-          const { data } = await supabase
+          const profileTimeout = new Promise<void>((resolve) => {
+            setTimeout(() => resolve(), 3000);
+          });
+          
+          const profilePromise = supabase
             .from('user_profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
+            
+          await Promise.race([profilePromise, profileTimeout]);
+          const { data } = await profilePromise;
           profile = data;
         } catch (e) {
-          console.log('Profile not found, creating basic profile');
+          console.log('Profile not found');
         }
 
         set({
@@ -52,7 +68,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ loading: false, initialized: true });
       }
-    } catch {
+    } catch (e) {
+      console.error('Initialize error:', e);
       set({ loading: false, initialized: true });
     }
 
