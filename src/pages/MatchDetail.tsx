@@ -22,7 +22,9 @@ export default function MatchDetail() {
     if (!id) return;
     setLoading(true);
 
-    const { data } = await supabase
+    console.log('尝试加载对局:', id);
+
+    const { data, error } = await supabase
       .from('matches')
       .select(`
         *,
@@ -33,6 +35,11 @@ export default function MatchDetail() {
       .eq('id', id)
       .single();
 
+    if (error) {
+      console.error('加载对局失败:', error);
+    }
+
+    console.log('加载对局数据:', data);
     setMatch(data as MatchWithProfiles);
     setLoading(false);
   };

@@ -60,8 +60,20 @@ export default function Home() {
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error('创建对局失败:', error);
+      alert('创建对局失败: ' + error.message);
+      setCreating(false);
+      setShowNewMatch(false);
+      return;
+    }
+
+    if (data) {
+      console.log('创建对局成功:', data);
       navigate(`/match/${data.id}`);
+    } else {
+      console.error('创建对局返回数据为空');
+      alert('创建对局失败: 返回数据为空');
     }
     setCreating(false);
     setShowNewMatch(false);
