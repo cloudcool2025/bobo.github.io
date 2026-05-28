@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { MatchWithProfiles, UserProfile } from '@/types/database';
+import type { Match, UserProfile } from '@/types/database';
 import { Trophy, ArrowLeft, Loader2, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import StatsChart from '@/components/StatsChart';
+
+interface MatchWithProfiles extends Match {
+  initiator?: UserProfile;
+  opponent?: UserProfile;
+  winner?: UserProfile | null;
+}
 
 export default function History() {
   const navigate = useNavigate();
@@ -31,12 +37,7 @@ export default function History() {
 
     let query = supabase
       .from('matches')
-      .select(`
-        *,
-        initiator:user_profiles!matches_initiator_id_fkey(*),
-        opponent:user_profiles!matches_opponent_id_fkey(*),
-        winner:user_profiles!matches_winner_id_fkey(*)
-      `)
+      .select('*')
       .eq('status', 'finished')
       .order('finished_at', { ascending: false });
 
@@ -45,7 +46,42 @@ export default function History() {
     }
 
     const { data: matchesData } = await query;
-    setMatches((matchesData as MatchWithProfiles[]) || []);
+    const rawMatches = matchesData || [];
+
+    const matchesWithProfiles: MatchWithProfiles[] = [];
+
+    for (const match of rawMatches) {
+      const { data: initiatorData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', match.initiator_id)
+        .single();
+      
+      const { data: opponentData } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', match.opponent_id)
+        .single();
+      
+      let winnerData = null;
+      if (match.winner_id) {
+        const { data: winnerResult } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', match.winner_id)
+          .single();
+        winnerData = winnerResult;
+      }
+
+      matchesWithProfiles.push({
+        ...match,
+        initiator: initiatorData || undefined,
+        opponent: opponentData || undefined,
+        winner: winnerData || null,
+      });
+    }
+
+    setMatches(matchesWithProfiles);
 
     const userId = selectedUser === 'all' ? profile.id : selectedUser;
     const { data: userMatches } = await supabase
@@ -174,25 +210,25 @@ export default function History() {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-green-700 flex items-center justify-center overflow-hidden mx-auto mb-1">
-                        {match.initiator.avatar_url ? (
+                        {match.initiator?.avatar_url ? (
                           <img src={match.initiator.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-amber-400">{match.initiator.username[0]}</span>
+                          <span className="text-amber-400">{match.initiator?.username?.[0] || '?'}</span>
                         )}
                       </div>
-                      <p className="text-amber-100 text-sm">{match.initiator.username}</p>
+                      <p className="text-amber-100 text-sm">{match.initiator?.username || '加载中...'}</p>
                       <p className="text-2xl font-bold text-amber-400">{match.initiator_score}</p>
                     </div>
                     <div className="text-amber-300 text-xl font-bold">VS</div>
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-green-700 flex items-center justify-center overflow-hidden mx-auto mb-1">
-                        {match.opponent.avatar_url ? (
+                        {match.opponent?.avatar_url ? (
                           <img src={match.opponent.avatar_url} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-amber-400">{match.opponent.username[0]}</span>
+                          <span className="text-amber-400">{match.opponent?.username?.[0] || '?'}</span>
                         )}
                       </div>
-                      <p className="text-amber-100 text-sm">{match.opponent.username}</p>
+                      <p className="text-amber-100 text-sm">{match.opponent?.username || '加载中...'}</p>
                       <p className="text-2xl font-bold text-amber-400">{match.opponent_score}</p>
                     </div>
                   </div>
