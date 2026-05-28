@@ -47,8 +47,18 @@ export default function Home() {
   };
 
   const createMatch = async () => {
-    if (!selectedOpponent || !profile) return;
+    if (!selectedOpponent || !profile) {
+      console.error('缺少必要参数:', { selectedOpponent, profile });
+      alert('请确保已登录并选择对手');
+      return;
+    }
+    
     setCreating(true);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('当前会话:', sessionData);
+    console.log('当前用户ID:', profile.id);
+    console.log('选择的对手ID:', selectedOpponent);
 
     const { data, error } = await supabase
       .from('matches')
@@ -62,7 +72,13 @@ export default function Home() {
 
     if (error) {
       console.error('创建对局失败:', error);
-      alert('创建对局失败: ' + error.message);
+      console.error('错误详情:', { 
+        message: error.message, 
+        code: error.code, 
+        details: error.details,
+        hint: error.hint 
+      });
+      alert('创建对局失败: ' + error.message + '\n错误代码: ' + error.code);
       setCreating(false);
       setShowNewMatch(false);
       return;
