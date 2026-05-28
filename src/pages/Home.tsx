@@ -59,38 +59,46 @@ export default function Home() {
     console.log('当前会话:', sessionData);
     console.log('当前用户ID:', profile.id);
     console.log('选择的对手ID:', selectedOpponent);
+    console.log('选择的对手信息:', users.find(u => u.id === selectedOpponent));
 
-    const { data, error } = await supabase
-      .from('matches')
-      .insert({
-        initiator_id: profile.id,
-        opponent_id: selectedOpponent,
-        status: 'playing',
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .insert({
+          initiator_id: profile.id,
+          opponent_id: selectedOpponent,
+          status: 'playing',
+        })
+        .select();
 
-    if (error) {
-      console.error('创建对局失败:', error);
-      console.error('错误详情:', { 
-        message: error.message, 
-        code: error.code, 
-        details: error.details,
-        hint: error.hint 
-      });
-      alert('创建对局失败: ' + error.message + '\n错误代码: ' + error.code);
-      setCreating(false);
-      setShowNewMatch(false);
-      return;
+      console.log('插入结果:', { data, error });
+
+      if (error) {
+        console.error('创建对局失败:', error);
+        console.error('错误详情:', { 
+          message: error.message, 
+          code: error.code, 
+          details: error.details,
+          hint: error.hint 
+        });
+        alert('创建对局失败: ' + error.message + '\n错误代码: ' + error.code);
+        setCreating(false);
+        setShowNewMatch(false);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        console.log('创建对局成功:', data[0]);
+        navigate(`/match/${data[0].id}`);
+      } else {
+        console.error('创建对局返回数据为空');
+        alert('创建对局失败: 返回数据为空');
+      }
+    } catch (err) {
+      console.error('创建对局时发生异常:', err);
+      alert('创建对局时发生错误');
     }
-
-    if (data) {
-      console.log('创建对局成功:', data);
-      navigate(`/match/${data.id}`);
-    } else {
-      console.error('创建对局返回数据为空');
-      alert('创建对局失败: 返回数据为空');
-    }
+    
     setCreating(false);
     setShowNewMatch(false);
   };
@@ -233,6 +241,12 @@ export default function Home() {
                   </option>
                 ))}
               </select>
+              <p className="text-amber-300 text-sm mt-2">
+                当前用户ID: {profile?.id}
+              </p>
+              <p className="text-amber-300 text-sm">
+                选择的对手ID: {selectedOpponent || '未选择'}
+              </p>
             </div>
 
             <div className="flex gap-3">
